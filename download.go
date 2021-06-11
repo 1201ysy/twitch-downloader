@@ -8,11 +8,70 @@ import (
 	"math"
 	"net/http"
 	"time"
-
+	//"net/http/httputil"
 	"github.com/jybp/twitch-downloader/m3u8"
 	"github.com/jybp/twitch-downloader/twitch"
 	"github.com/pkg/errors"
 )
+
+
+// Qualities return the qualities available for the Clip "vodID".
+func Qualities_clip(ctx context.Context, client *http.Client, clientID, vodID string) ([]string, error) {
+	var qualities []string
+	api := twitch.New(client, clientID)
+	clip_info,err :=api.Clip_url(context.Background(), vodID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _,v:= range clip_info{
+		qualities = append(qualities,v.Quality_option)
+	}
+
+	return qualities, nil
+}
+
+
+// Download sets up the download of the Clip "vodId" with quality "quality"
+// using the provided http.Client.
+// The download is actually perfomed when the returned io.Reader is being read.
+func Download_clip(ctx context.Context, client *http.Client, clientID, vodID, quality string) (r *Merger, err error) {
+	api := twitch.New(client, clientID)
+	clip_info,err :=api.Clip_url(context.Background(), vodID)
+	if err != nil {
+		return nil, err
+	}
+	var variant *twitch.Clip
+	for _,v:= range clip_info{
+		if v.Quality_option != quality {
+			continue
+		}
+		variant = &v
+		break
+	}
+
+	if variant == nil {
+		return nil, errors.Errorf("quality %s not found", quality)
+	}
+
+	tok, sig, err := api.ClipToken(ctx, vodID)
+	if err != nil {
+		return nil, errors.Errorf("something went wrong getting authenticated clip url [%s]: \n%v", variant.SourceURL, err)
+	}
+
+	auth_source_url := fmt.Sprintf("%s?sig=%s&token=%s", variant.SourceURL, sig, tok)
+
+	req, err := http.NewRequest(http.MethodGet, auth_source_url, nil)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var downloadFns []downloadFunc
+	downloadFns = append(downloadFns, prepare(client, req))
+
+	return &Merger{downloads: downloadFns}, nil
+}
+
 
 // Qualities return the qualities available for the VOD "vodID".
 func Qualities(ctx context.Context, client *http.Client, clientID, vodID string) ([]string, error) {

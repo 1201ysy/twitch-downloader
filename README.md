@@ -15,7 +15,7 @@ https://github.com/jybp/twitch-downloader/releases
 
 |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Flag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| Description |
 | --- | --- |
-| `-vod` | The ID or absolute URL of the twitch VOD to download. https://www.twitch.tv/videos/12345 is the VOD with ID "12345". |
+| `-vod` | The ID or absolute URL of the twitch VOD/Clip to download. https://www.twitch.tv/videos/12345 is the VOD with ID "12345". |
 | `-q` | Quality of the VOD to download. Omit this flag to print the available qualities. |
 | `-o` | Path where the VOD will be downloaded. (optional)|
 | `-start` | Specify "start" to download a subset of the VOD. Example: 1h23m45s (optional) |
