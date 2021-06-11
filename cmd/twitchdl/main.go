@@ -19,9 +19,17 @@ import (
 
 // Must be injected at build time using the -ldflags flag.
 // go build -ldflags "-X main.defaultClientID=YourClientID"
+
+// go build -ldflags "-X main.defaultClientID=kimne78kx3ncx6brgo4mv6wki5h1ko"
 var defaultClientID string
 
-// Flags
+
+
+// Flags 
+
+// command line flags like e.g -vod, -start when running 
+// flag.typeVar(&flagvar, "flagName", "default value", "help messsage of r flag name")
+
 var clientID, vodID, quality, output string
 var start, end time.Duration
 
@@ -38,6 +46,8 @@ func init() {
 }
 
 func main() {
+
+	isClip := false
 	if len(clientID) > 0 {
 		defaultClientID = clientID
 	}
@@ -45,7 +55,7 @@ func main() {
 	if len(defaultClientID) == 0 {
 		panic("no default client id specified")
 	}
-
+	
 	if len(vodID) == 0 {
 		flag.PrintDefaults()
 		return
@@ -54,26 +64,65 @@ func main() {
 	id, err := twitch.ID(vodID)
 	if err == nil {
 		vodID = id
+	} else{
+		// check if its clip url instead
+		//fmt.Println(err)
+		id, err := twitch.ID_Clip(vodID)
+		if err == nil {
+			vodID = id
+			isClip = true
+			//fmt.Println(id)
+		} 
+	}
+	
+	var vod twitch.VOD
+	api := twitch.New(http.DefaultClient, defaultClientID)
+	//fmt.Println(api)
+	if isClip{
+		vod, err = api.Clip(context.Background(), vodID)
+	} else{
+		vod, err = api.VOD(context.Background(), vodID)
 	}
 
-	api := twitch.New(http.DefaultClient, defaultClientID)
-	vod, err := api.VOD(context.Background(), vodID)
 	if err != nil {
-		log.Fatalf("Retrieving video informations for VOD %s failed: %v", vodID, err)
+		if isClip{
+			log.Fatalf("Retrieving video informations for Clip %s failed: %v", vodID, err)
+		} else{
+			log.Fatalf("Retrieving video informations for VOD %s failed: %v", vodID, err)
+		}
 	}
 
 	if len(quality) == 0 {
-		qualities, err := twitchdl.Qualities(context.Background(), http.DefaultClient, defaultClientID, vodID)
+		var qualities []string
+		if isClip{
+			qualities, err = twitchdl.Qualities_clip(context.Background(), http.DefaultClient, defaultClientID, vodID)
+		} else{
+			qualities, err = twitchdl.Qualities(context.Background(), http.DefaultClient, defaultClientID, vodID)
+		}
+
 		if err != nil {
-			log.Fatalf("Retrieving qualities for VOD %s failed: %v", vodID, err)
+			if isClip{
+				log.Fatalf("Retrieving qualities for Clip %s failed: %v", vodID, err)
+			} else{
+				log.Fatalf("Retrieving qualities for VOD %s failed: %v", vodID, err)
+			}
 		}
 		fmt.Printf("%s\n%s\n", vod.Title, strings.Join(qualities, "\n"))
 		return
 	}
 
-	download, err := twitchdl.Download(context.Background(), http.DefaultClient, defaultClientID, vodID, quality, start, end)
-	if err != nil {
-		log.Fatalf("Retrieving stream for VOD %s failed: %v", vodID, err)
+	var download *twitchdl.Merger
+	if isClip{
+		download, err = twitchdl.Download_clip(context.Background(), http.DefaultClient, defaultClientID, vodID, quality)
+		if err != nil {
+			log.Fatalf("Retrieving stream for Clip %s failed: %v", vodID, err)
+		}
+	} else{
+
+		download, err = twitchdl.Download(context.Background(), http.DefaultClient, defaultClientID, vodID, quality, start, end)
+		if err != nil {
+			log.Fatalf("Retrieving stream for VOD %s failed: %v", vodID, err)
+		}
 	}
 
 	path, filename := filepath.Split(output)
