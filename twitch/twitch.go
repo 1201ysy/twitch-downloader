@@ -47,7 +47,7 @@ func ID_Clip(URL string) (string, error) {
 	if !matched {
 		return "", errors.New("URL host is not twitch.tv:" + u.Hostname())
 	}
-	matched, err = regexp.Match(`.*clips.*`, []byte(URL))
+	matched, err = regexp.Match(`.*clip.*`, []byte(URL))
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

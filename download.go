@@ -35,7 +35,7 @@ func Qualities_clip(ctx context.Context, client *http.Client, clientID, vodID st
 // Download sets up the download of the Clip "vodId" with quality "quality"
 // using the provided http.Client.
 // The download is actually perfomed when the returned io.Reader is being read.
-func Download_clip(ctx context.Context, client *http.Client, clientID, vodID, quality string) (r *Merger, err error) {
+func Download_clip(ctx context.Context, client *http.Client, clientID, vodID, quality string, showLink bool) (r *Merger, err error) {
 	api := twitch.New(client, clientID)
 	clip_info,err :=api.Clip_url(context.Background(), vodID)
 	if err != nil {
@@ -69,6 +69,11 @@ func Download_clip(ctx context.Context, client *http.Client, clientID, vodID, qu
 	var downloadFns []downloadFunc
 	downloadFns = append(downloadFns, prepare(client, req))
 
+	if (showLink){
+		fmt.Println(auth_source_url)
+	}
+	
+
 	return &Merger{downloads: downloadFns}, nil
 }
 
@@ -96,7 +101,7 @@ func Qualities(ctx context.Context, client *http.Client, clientID, vodID string)
 // Download sets up the download of the VOD "vodId" with quality "quality"
 // using the provided http.Client.
 // The download is actually perfomed when the returned io.Reader is being read.
-func Download(ctx context.Context, client *http.Client, clientID, vodID, quality string, start, end time.Duration) (r *Merger, err error) {
+func Download(ctx context.Context, client *http.Client, clientID, vodID, quality string, start, end time.Duration, showLink bool) (r *Merger, err error) {
 	api := twitch.New(client, clientID)
 	m3u8raw, err := api.M3U8(ctx, vodID)
 	if err != nil {
@@ -144,6 +149,10 @@ L:
 			return nil, errors.WithStack(err)
 		}
 		downloadFns = append(downloadFns, prepare(client, req))
+	}
+
+	if (showLink){
+		fmt.Println(variant.URL)
 	}
 
 	return &Merger{downloads: downloadFns}, nil

@@ -32,6 +32,7 @@ var defaultClientID string
 
 var clientID, vodID, quality, output string
 var start, end time.Duration
+var m3u8Link bool
 
 func init() {
 	log.SetFlags(0)
@@ -42,6 +43,7 @@ func init() {
 	flag.DurationVar(&start, "start", time.Duration(0), "Specify \"start\" to download a subset of the VOD. Example: 1h23m45s (optional)")
 	flag.DurationVar(&end, "end", time.Duration(0), "Specify \"end\" to download a subset of the VOD. Example: 1h34m56s (optional)")
 	flag.StringVar(&clientID, "client-id", "", "Use a specific twitch.tv API client ID. (optional)")
+	flag.BoolVar(&m3u8Link, "v", false, "verbose - Also returns m3u8 index url")
 	flag.Parse()
 }
 
@@ -113,13 +115,13 @@ func main() {
 
 	var download *twitchdl.Merger
 	if isClip{
-		download, err = twitchdl.Download_clip(context.Background(), http.DefaultClient, defaultClientID, vodID, quality)
+		download, err = twitchdl.Download_clip(context.Background(), http.DefaultClient, defaultClientID, vodID, quality, m3u8Link)
 		if err != nil {
 			log.Fatalf("Retrieving stream for Clip %s failed: %v", vodID, err)
 		}
 	} else{
 
-		download, err = twitchdl.Download(context.Background(), http.DefaultClient, defaultClientID, vodID, quality, start, end)
+		download, err = twitchdl.Download(context.Background(), http.DefaultClient, defaultClientID, vodID, quality, start, end, m3u8Link)
 		if err != nil {
 			log.Fatalf("Retrieving stream for VOD %s failed: %v", vodID, err)
 		}
